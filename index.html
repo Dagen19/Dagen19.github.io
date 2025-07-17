@@ -29,6 +29,21 @@
             opacity: 1;
             transform: translateY(0);
         }
+        /* Styling for the typing indicator */
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -90,8 +105,7 @@
                 </div>
             </div>
             <div class="md:w-1/2 mt-12 md:mt-0 flex justify-center">
-                 <!-- You can replace this placeholder with a real photo of yourself -->
-                 <img src="profilepicture.jpg" alt="Daniel Genetu Tasew Portrait" class="rounded-full shadow-2xl w-64 h-64 md:w-80 md:h-80 object-cover">
+                 <img src="image/profile__picture.jpg" alt="Daniel Genetu Tasew Portrait" class="rounded-full shadow-2xl w-64 h-64 md:w-80 md:h-80 object-cover">
             </div>
         </section>
 
@@ -270,16 +284,53 @@
         </div>
     </footer>
 
+    <!-- CHATBOT WIDGET CODE -->
+    <!-- Chatbot Bubble -->
+    <div id="chat-bubble" class="fixed bottom-5 right-5 w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center cursor-pointer shadow-lg transform hover:scale-110 transition-transform">
+        <i class="fas fa-comment-dots text-white text-2xl"></i>
+    </div>
+
+    <!-- Chatbot Window -->
+    <div id="chat-window" class="hidden fixed bottom-24 right-5 w-full max-w-lg h-[70vh] max-h-[600px] bg-white rounded-xl shadow-2xl flex flex-col transition-all duration-300 sm:w-96">
+        <!-- Chat Header -->
+        <div class="bg-indigo-600 text-white p-4 rounded-t-xl flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-lg">Danny's AI Assistant</h3>
+                <p class="text-sm text-indigo-200">Ask me about Daniel</p>
+            </div>
+            <button id="close-chat" class="text-2xl hover:text-indigo-200">&times;</button>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="chat-messages" class="flex-1 p-6 overflow-y-auto bg-gray-50">
+            <!-- Initial Bot Message -->
+            <div class="flex mb-4">
+                <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-xs">
+                    <p>Hello! I'm Danny's AI Assistant. Feel free to ask me any questions about his skills, experience, or projects.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t border-gray-200 bg-white rounded-b-xl">
+            <div class="flex items-center">
+                <input type="text" id="chat-input" placeholder="Type your message..." class="flex-1 border-2 border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="send-button" class="ml-3 bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 disabled:opacity-50" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // JavaScript for mobile menu toggle
+        // --- Mobile Menu Toggle ---
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-
         mobileMenuButton.addEventListener('click', () => {
             mobileMenu.classList.toggle('hidden');
         });
         
-        // JavaScript for scroll animations
+        // --- Scroll Animations ---
         const sections = document.querySelectorAll('.fade-in-section');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -288,10 +339,160 @@
                 }
             });
         }, { threshold: 0.1 });
-
         sections.forEach(section => {
             observer.observe(section);
         });
+
+        // --- Chatbot Logic ---
+        const chatBubble = document.getElementById('chat-bubble');
+        const chatWindow = document.getElementById('chat-window');
+        const closeChat = document.getElementById('close-chat');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        
+        // --- Data Context from your CV ---
+        // This is the "brain" of the chatbot. We give it all the important info from your CV.
+        const portfolioContext = `
+            You are an AI assistant for Daniel Genetu Tasew's portfolio website. Your goal is to answer questions from visitors based ONLY on the following information about Daniel. Be friendly, professional, and concise.
+
+            **Personal Information:**
+            - Name: Daniel Genetu Tasew
+            - Title: Civil Engineer specializing in Water and Sustainable Development
+            - Nationality: Ethiopian
+            - Location: Delft, Netherlands
+
+            **Contact Information & Work Status:**
+            - Work Status: Daniel is currently open to work and actively seeking new opportunities.
+            - Email: Any offers or inquiries can be sent to danielgenetu14@gmail.com.
+            - Availability: Daniel will respond to emails during working days as soon as possible.
+
+            **Work Experience:**
+            1.  **Civil Engineer at Ethiopian Construction Works Corporation (2021-2024):**
+                - Contributed to the design and construction of major transport infrastructure.
+                - Projects included the Duber Guda & Legegur River Bridges, Debre-Markos Airfield, and Gishen & Mile-Semera-Galafi Roads.
+            2.  **Resident Engineer at Archi-Abyssinia Architects and Engineers (2018-2021):**
+                - Oversaw project execution on-site.
+                - Responsibilities: Monitoring progress, quality assurance/control, evaluating performance, and approving payment certificates.
+
+            **Education:**
+            1.  **MSc in Water and Sustainable Development from IHE Delft Institute for Water Education, Netherlands (2023-2024):**
+                - Specialized in the Water, Food, and Energy track.
+                - Thesis: "Hidden Hydropower, Harvesting Untapped hydro-potential in Abandoned Weir Structure."
+            2.  **BSc in Civil Engineering from Wollo University, Ethiopia (2013-2018):**
+                - Graduated with Great Distinction (3.56 GPA).
+
+            **Key Skills:**
+            - Engineering Software: Civil 3D, AutoCAD, HEC-RAS, Epanet, QGIS, ArcGIS.
+            - Programming: Basic Python, HTML, CSS.
+            - AI/ML: M5 Model Tree, Weka (Data Mining).
+        `;
+
+        let chatHistory = [{ role: "user", parts: [{ text: portfolioContext }] }];
+        
+        // --- Chatbot UI Controls ---
+        chatBubble.addEventListener('click', () => chatWindow.classList.remove('hidden'));
+        closeChat.addEventListener('click', () => chatWindow.classList.add('hidden'));
+        chatInput.addEventListener('keyup', () => sendButton.disabled = chatInput.value.trim() === '');
+
+        // --- Main Chat Function ---
+        const handleSendMessage = async () => {
+            const userInput = chatInput.value.trim();
+            if (!userInput) return;
+
+            // Display user's message
+            appendMessage(userInput, 'user');
+            chatInput.value = '';
+            sendButton.disabled = true;
+
+            // Show typing indicator
+            const typingIndicator = showTypingIndicator();
+
+            // Add user message to history and send to API
+            chatHistory.push({ role: "user", parts: [{ text: userInput }] });
+
+            try {
+                // This is the call to the Gemini API
+                const apiKey = ""; // Leave empty to be handled by the environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const payload = { contents: chatHistory };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                let botResponse = "Sorry, I couldn't process that. Please try asking in a different way.";
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                   botResponse = result.candidates[0].content.parts[0].text;
+                }
+                
+                // Add bot response to history
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+                
+                // Display bot's response
+                typingIndicator.remove();
+                appendMessage(botResponse, 'bot');
+
+            } catch (error) {
+                console.error("Chatbot Error:", error);
+                typingIndicator.remove();
+                appendMessage("I'm having trouble connecting right now. Please try again later.", 'bot');
+            }
+        };
+
+        sendButton.addEventListener('click', handleSendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSendMessage();
+            }
+        });
+
+        // --- Helper functions to display messages ---
+        function appendMessage(text, sender) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('flex', 'mb-4');
+
+            const messageBubble = document.createElement('div');
+            messageBubble.classList.add('p-3', 'rounded-lg', 'max-w-xs');
+            messageBubble.innerHTML = `<p>${text}</p>`; // Use innerHTML to render potential formatting
+
+            if (sender === 'user') {
+                messageWrapper.classList.add('justify-end');
+                messageBubble.classList.add('bg-indigo-600', 'text-white');
+            } else {
+                messageBubble.classList.add('bg-gray-200', 'text-gray-800');
+            }
+            
+            messageWrapper.appendChild(messageBubble);
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        function showTypingIndicator() {
+            const typingWrapper = document.createElement('div');
+            typingWrapper.id = 'typing-indicator';
+            typingWrapper.classList.add('flex', 'mb-4');
+            typingWrapper.innerHTML = `
+                <div class="bg-gray-200 p-3 rounded-lg">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(typingWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return typingWrapper;
+        }
+
     </script>
 </body>
 </html>
