@@ -352,7 +352,6 @@
         const sendButton = document.getElementById('send-button');
         
         // --- Data Context from your CV ---
-        // This is the "brain" of the chatbot. We give it all the important info from your CV.
         const portfolioContext = `
             You are an AI assistant for Daniel Genetu Tasew's portfolio website. Your goal is to answer questions from visitors based ONLY on the following information about Daniel. Be friendly, professional, and concise.
 
@@ -400,23 +399,18 @@
             const userInput = chatInput.value.trim();
             if (!userInput) return;
 
-            // Display user's message
             appendMessage(userInput, 'user');
             chatInput.value = '';
             sendButton.disabled = true;
 
-            // Show typing indicator
             const typingIndicator = showTypingIndicator();
-
-            // Add user message to history and send to API
             chatHistory.push({ role: "user", parts: [{ text: userInput }] });
 
             try {
-                // This is the call to the Gemini API
-                const apiKey = ""; // Leave empty to be handled by the environment
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                // *** UPDATED: The API call now goes to our own backend server ***
+                const apiUrl = 'http://localhost:3000/api/chat';
                 
-                const payload = { contents: chatHistory };
+                const payload = { chatHistory: chatHistory };
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -435,10 +429,8 @@
                    botResponse = result.candidates[0].content.parts[0].text;
                 }
                 
-                // Add bot response to history
                 chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
                 
-                // Display bot's response
                 typingIndicator.remove();
                 appendMessage(botResponse, 'bot');
 
@@ -463,7 +455,7 @@
 
             const messageBubble = document.createElement('div');
             messageBubble.classList.add('p-3', 'rounded-lg', 'max-w-xs');
-            messageBubble.innerHTML = `<p>${text}</p>`; // Use innerHTML to render potential formatting
+            messageBubble.innerHTML = `<p>${text}</p>`; 
 
             if (sender === 'user') {
                 messageWrapper.classList.add('justify-end');
@@ -474,7 +466,7 @@
             
             messageWrapper.appendChild(messageBubble);
             chatMessages.appendChild(messageWrapper);
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         function showTypingIndicator() {
