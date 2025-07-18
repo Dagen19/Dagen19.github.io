@@ -407,8 +407,8 @@
             chatHistory.push({ role: "user", parts: [{ text: userInput }] });
 
             try {
-                // *** UPDATED: The API call now goes to our own backend server ***
-                const apiUrl = 'http://localhost:3000/api/chat';
+                // *** UPDATED: The API call now goes to our live Render backend server ***
+                const apiUrl = 'https://dagen19-github-io-backend.onrender.com/api/chat';
                 
                 const payload = { chatHistory: chatHistory };
 
