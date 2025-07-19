@@ -1,69 +1,96 @@
 // server.js
 
 // --- 1. Import Required Libraries ---
-// We need 'express' to create our web server.
-// We need 'cors' to allow our frontend website to talk to this server.
-// We need 'node-fetch' to make API calls from our server to the Google AI server.
-// We need 'dotenv' to securely manage our API key.
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-require('dotenv').config(); // This loads the .env file
+const nodemailer = require('nodemailer'); // For sending emails
+require('dotenv').config(); 
 
 // --- 2. Initialize the Server ---
 const app = express();
-const PORT = 3000; // The server will run on port 3000
+const PORT = 3000;
 
 // --- 3. Configure Middleware ---
-// This tells our server to enable CORS (so the browser doesn't block requests).
 app.use(cors());
-// This tells our server to understand JSON data sent from the frontend.
 app.use(express.json());
 
-// --- 4. Define the API Endpoint ---
-// We create an endpoint at '/api/chat'. When our website sends a message here, this code will run.
+// --- 4. Define API Endpoints ---
+
+// Endpoint for the AI Chatbot
 app.post('/api/chat', async (req, res) => {
     try {
-        // Get the conversation history sent from the frontend
         const { chatHistory } = req.body;
-
-        // Get the API Key from our secure environment variables
         const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
         if (!GEMINI_API_KEY) {
             throw new Error("API Key not found.");
         }
-
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-        
         const payload = { contents: chatHistory };
-
-        // Make the secure call from our server to the Google AI API
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
         if (!response.ok) {
-            // If Google's server returns an error, we send it back to our frontend
             const errorData = await response.json();
             console.error("API Error:", errorData);
             return res.status(response.status).json({ message: "Error from Gemini API", details: errorData });
         }
-
         const result = await response.json();
-        
-        // Send the AI's response back to our frontend
         res.json(result);
-
     } catch (error) {
         console.error("Server Error:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
 
+// *** UPDATED ENDPOINT FOR SENDING EMAILS ***
+app.post('/api/send-email', async (req, res) => {
+    try {
+        // Now we also receive senderType from the form
+        const { name, email, company, message, type, senderType } = req.body;
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS 
+            }
+        });
+
+        // *** NEW: Logic to format the "From" field based on senderType ***
+        let fromLabel = "From (Individual)";
+        if (senderType === 'Organization') {
+            fromLabel = "From (Organization)";
+        }
+
+        const mailOptions = {
+            from: `"${name}" <${email}>`, 
+            to: process.env.EMAIL_USER, 
+            subject: `New Portfolio Message: ${type}`, 
+            html: `
+                <h2>New ${type} from your Portfolio Website</h2>
+                <p><strong>${fromLabel}:</strong> ${name}</p>
+                <p><strong>Contact Email:</strong> ${email}</p>
+                ${company ? `<p><strong>Company:</strong> ${company}</p>` : ''}
+                <hr>
+                <h3>Message:</h3>
+                <p>${message}</p>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ message: 'Email sent successfully!' });
+
+    } catch (error) {
+        console.error("Email Sending Error:", error);
+        res.status(500).json({ message: 'Failed to send email.' });
+    }
+});
+
+
 // --- 5. Start the Server ---
-// This command starts the server and makes it listen for requests on the specified port.
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
